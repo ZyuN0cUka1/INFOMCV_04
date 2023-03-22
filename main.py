@@ -4,21 +4,22 @@ import matplotlib.pyplot as plt
 
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (mnist_train_images, mnist_train_labels), (mnist_test_images, mnist_test_labels) = fashion_mnist.load_data()
+mnist_class_name = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag',
+                    'Ankle boot']
 
 
 class tfMnistTrainer:
     def __init__(self, train_images=mnist_train_images, test_images=mnist_test_images,
-                 train_labels=mnist_train_labels, test_labels=mnist_test_labels,
+                 train_labels=mnist_train_labels, test_labels=mnist_test_labels, class_names=mnist_class_name,
                  dense=None, optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                  loss_weight=None):
+        self.class_names = class_names
         if dense is None:
             dense = [
                 tf.keras.layers.Flatten(input_shape=(28, 28)),
                 tf.keras.layers.Dense(128, activation='relu'),
                 tf.keras.layers.Dense(10)
             ]
-        self.class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
-                            'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
         self.train_images = train_images / 255.0
         self.test_images = test_images / 255.0
