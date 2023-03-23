@@ -107,7 +107,17 @@ def plot_value_array(ind, predictions_array, true_label):
 if __name__ == '__main__':
     model = None  # load the existing model
 
-    dense = None # the custom dense of the model if model is None
+    # dense = None # the custom dense of the model if model is None
+    dense = [
+        tf.keras.Input(shape=(mnist_shape[0], mnist_shape[1], 1)),
+        tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(10, activation="softmax"),
+    ]
 
     optimizer = 'adam'
     # optimizer = tf.keras.optimizers.SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
