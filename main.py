@@ -1,9 +1,11 @@
+import os.path
 import keras.models
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+from string import Template
 
-model_path = 'model/%s'
+model_path = Template('model/${name}.h5')
 
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (mnist_train_images, mnist_train_labels), (mnist_test_images, mnist_test_labels) = fashion_mnist.load_data()
@@ -15,13 +17,18 @@ class tfMnistTrainer:
     def __init__(self, train_images=mnist_train_images, test_images=mnist_test_images,
                  train_labels=mnist_train_labels, test_labels=mnist_test_labels, class_names=None,
                  dense=None, optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                 loss_weight=None, model=None):
+                 loss_weight=None, model=None, epochs=10):
+
+        self.train_images = train_images / 255.0
+        self.test_images = test_images / 255.0
+        self.train_labels = train_labels
+        self.test_labels = test_labels
 
         if class_names is None:
-            class_names = mnist_class_name
+            self.class_names = mnist_class_name
 
         if model is not None:
-            self.model = keras.models.load_model(model_path.format(model))
+            self.model = keras.models.load_model(model_path.substitute(name='temp'))
         else:
             if dense is None:
                 dense = [
@@ -30,15 +37,10 @@ class tfMnistTrainer:
                     tf.keras.layers.Dense(10)
                 ]
             self.model = tf.keras.Sequential(dense)
+            self.model.compile(optimizer=optimizer, loss=loss, loss_weights=loss_weight, metrics=['accuracy'])
+            self.model.fit(self.train_images, self.train_labels, epochs=epochs)
+            self.model_save(name='temp')
 
-        self.class_names = class_names
-        self.train_images = train_images / 255.0
-        self.test_images = test_images / 255.0
-        self.train_labels = train_labels
-        self.test_labels = test_labels
-
-        self.model.compile(optimizer=optimizer, loss=loss, loss_weights=loss_weight, metrics=['accuracy'])
-        self.model.fit(self.train_images, self.train_labels, epochs=10)
         self.probability_model = tf.keras.Sequential([self.model, tf.keras.layers.Softmax()])
         self.predictions = self.probability_model.predict(self.test_images)
 
@@ -48,7 +50,12 @@ class tfMnistTrainer:
         self.predictions = self.probability_model.predict(test_images)
 
     def model_save(self, name):
-        self.model.save(model_path.format(name))
+        self.model.save(model_path.substitute(name=name))
+        print(f"file {model_path.substitute(name=name)} was saved!")
+        if name != 'temp':
+            if os.path.isfile(model_path.substitute(name='temp')):
+                os.remove(model_path.substitute(name='temp'))
+                print(f"file {model_path.substitute(name='temp')} was removed!")
 
     def evaluate(self, verbose=2, test_images=None, test_labels=None):
         if test_images is None:
