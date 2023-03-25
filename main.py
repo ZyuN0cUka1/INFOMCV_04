@@ -220,6 +220,46 @@ if __name__ == '__main__':
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(10, activation="softmax")
+        ],
+        [
+            tf.keras.Input(shape=(mnist_shape[0], mnist_shape[1], 1)),
+            tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+            tf.keras.layers.Dropout(0.25),
+            tf.keras.layers.Conv2D(128, kernel_size=(3, 3), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Conv2D(128, kernel_size=(3, 3), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+            tf.keras.layers.Dropout(0.25),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(256, activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dense(10, activation="softmax")
+        ],
+        [
+            tf.keras.Input(shape=(mnist_shape[0], mnist_shape[1], 1)),
+            tf.keras.layers.Conv2D(32, kernel_size=(5, 5), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Conv2D(32, kernel_size=(5, 5), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+            tf.keras.layers.Dropout(0.25),
+            tf.keras.layers.Conv2D(128, kernel_size=(5, 5), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Conv2D(128, kernel_size=(5, 5), activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+            tf.keras.layers.Dropout(0.25),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(256, activation="relu"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dense(10, activation="softmax")
         ]
     ]
 
@@ -240,7 +280,7 @@ if __name__ == '__main__':
     #         'logcosh', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy',
     #         'kullback_leibler_divergence', 'poisson', 'cosine_proximity'}
 
-    tc = tfMnistTrainer(_dense=dense[0])
+    tc = tfMnistTrainer(_dense=dense[4])
     # num_rows = 5
     # num_cols = 3
     # num_images = num_rows * num_cols
