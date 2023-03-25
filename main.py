@@ -7,7 +7,7 @@ import cv2 as cv
 from string import Template
 
 model_path = Template('model/${name}.h5')
-fig_path = Template('figure/${name}_${addition},jpg')
+fig_path = Template('figure/${name}_${addition}.png')
 
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (mnist_train_images, mnist_train_labels), (mnist_test_images, mnist_test_labels) = fashion_mnist.load_data()
