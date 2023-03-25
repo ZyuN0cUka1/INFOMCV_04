@@ -3,9 +3,11 @@ import keras.models
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2 as cv
 from string import Template
 
 model_path = Template('model/${name}.h5')
+fig_path = Template('figure/${name}_${addition},jpg')
 
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (mnist_train_images, mnist_train_labels), (mnist_test_images, mnist_test_labels) = fashion_mnist.load_data()
@@ -17,11 +19,16 @@ mnist_shape = mnist_test_images.shape[1:3]
 class tfMnistTrainer:
     def __init__(self, _train_images=mnist_train_images, _test_images=mnist_test_images, _train_shape=mnist_shape,
                  _train_labels=mnist_train_labels, _test_labels=mnist_test_labels, _class_names=None,
-                 _dense=None, _optimizer='adam', _loss=None, _loss_weight=None, _model=None, _epochs=10):
+                 _dense=None, _optimizer='adam', _loss=None, _loss_weight=None, _model=None, _epochs=15):
 
-        self.train_images = _train_images / 255.0
+        temp_train = _train_images / 255.0
+        temp_ind = int(0.2 * len(temp_train))
+
+        self.train_images = temp_train[temp_ind:]
+        self.valid_images = temp_train[:temp_ind]
+        self.train_labels = _train_labels[temp_ind:]
+        self.valid_labels = _train_labels[:temp_ind]
         self.test_images = _test_images / 255.0
-        self.train_labels = _train_labels
         self.test_labels = _test_labels
 
         if _loss is None:
@@ -32,6 +39,7 @@ class tfMnistTrainer:
 
         if (_model is not None) and os.path.isfile(model_path.substitute(name=_model)):
             self.model = keras.models.load_model(model_path.substitute(name=_model))
+            self.name = _model
         else:
             if _dense is None:
                 _dense = [
@@ -41,9 +49,16 @@ class tfMnistTrainer:
                 ]
             self.model = tf.keras.Sequential(_dense)
             self.model.compile(optimizer=_optimizer, loss=_loss, loss_weights=_loss_weight, metrics=['accuracy'])
-            self.model.fit(self.train_images, self.train_labels, epochs=_epochs)
+            self.history = self.model.fit(self.train_images, self.train_labels, epochs=_epochs,
+                                          validation_data=(self.valid_images, self.valid_labels))
             self.model_save(_name='temp')
+            self.name = 'temp'
 
+        self.model.summary()
+        try:
+            self.plot_training_figure()
+        finally:
+            pass
         self.probability_model = tf.keras.Sequential([self.model, tf.keras.layers.Softmax()])
         self.predictions = self.probability_model.predict(self.test_images)
 
@@ -53,6 +68,7 @@ class tfMnistTrainer:
         self.predictions = self.probability_model.predict(_test_images)
 
     def model_save(self, _name):
+        self.name = _name
         self.model.save(model_path.substitute(name=_name))
         print(f"file {model_path.substitute(name=_name)} was saved!")
         if _name != 'temp':
@@ -88,6 +104,22 @@ class tfMnistTrainer:
                                              self.class_names[_true_label]),
                    color=color)
 
+    def plot_training_figure(self):
+        plt.figure()
+        plt.plot(self.history.history['accuracy'], 'b', label='Training accuracy')
+        plt.plot(self.history.history['val_accuracy'], 'r', label='Validation accuracy')
+        plt.title('Training and validation accuracy')
+        plt.legend()
+        plt.savefig(fig_path.substitute(name=self.name, addition='acc'))
+        print(f"file {fig_path.substitute(name=self.name, addition='acc')} was saved!")
+        plt.figure()
+        plt.plot(self.history.history['loss'], 'b', label='Training loss')
+        plt.plot(self.history.history['val_loss'], 'r', label='Validation loss')
+        plt.title('Training and validation loss')
+        plt.legend()
+        plt.savefig(fig_path.substitute(name=self.name, addition='loss'))
+        print(f"file {fig_path.substitute(name=self.name, addition='loss')} was saved!")
+
 
 def plot_value_array(ind, predictions_array, true_label):
     true_label = true_label[ind]
@@ -105,19 +137,35 @@ def plot_value_array(ind, predictions_array, true_label):
 # Plot the first X test images, their predicted labels, and the true labels.
 # Color correct predictions in blue and incorrect predictions in red.
 if __name__ == '__main__':
-    model = None  # load the existing model
+    model = 'base_line'  # load the existing model
+    model = None
+
+    mnist_train_images = [cv.copyMakeBorder(x, 1, 1, 1, 1, cv.BORDER_REPLICATE) for x in mnist_train_images]
+    mnist_shape = mnist_test_images.shape[1:3]
 
     # dense = None # the custom dense of the model if model is None
     dense = [
         tf.keras.Input(shape=(mnist_shape[0], mnist_shape[1], 1)),
         tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Dropout(0.25),
         tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Dropout(0.25),
         tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(10, activation="softmax"),
+        tf.keras.layers.Dense(10, activation="softmax")
     ]
+
+    epochs = 15
 
     optimizer = 'adam'
     # optimizer = tf.keras.optimizers.SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
@@ -134,15 +182,15 @@ if __name__ == '__main__':
     #         'logcosh', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy',
     #         'kullback_leibler_divergence', 'poisson', 'cosine_proximity'}
 
-    tc = tfMnistTrainer(_dense=dense, _model=model, _optimizer=optimizer)
-    num_rows = 5
-    num_cols = 3
-    num_images = num_rows * num_cols
-    plt.figure(figsize=(2 * 2 * num_cols, 2 * num_rows))
-    for i in range(num_images):
-        plt.subplot(num_rows, 2 * num_cols, 2 * i + 1)
-        tc.plot_image(i, tc.predictions[i], tc.test_labels, tc.test_images)
-        plt.subplot(num_rows, 2 * num_cols, 2 * i + 2)
-        plot_value_array(i, tc.predictions[i], tc.test_labels)
-    plt.tight_layout()
-    plt.show()
+    tc = tfMnistTrainer(_dense=dense, _model=model, _optimizer=optimizer, _epochs=epochs)
+    # num_rows = 5
+    # num_cols = 3
+    # num_images = num_rows * num_cols
+    # plt.figure(figsize=(2 * 2 * num_cols, 2 * num_rows))
+    # for i in range(num_images):
+    #     plt.subplot(num_rows, 2 * num_cols, 2 * i + 1)
+    #     tc.plot_image(i, tc.predictions[i], tc.test_labels, tc.test_images)
+    #     plt.subplot(num_rows, 2 * num_cols, 2 * i + 2)
+    #     plot_value_array(i, tc.predictions[i], tc.test_labels)
+    # plt.tight_layout()
+    # plt.show()
