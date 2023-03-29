@@ -68,12 +68,9 @@ class tfMnistTrainer:
                                           validation_data=(self.valid_images, self.valid_labels))
             self.model_save(_name='temp')
             self.name = 'temp'
+            self.plot_training_figure()
 
         self.model.summary()
-        try:
-            self.plot_training_figure()
-        finally:
-            pass
         self.probability_model = tf.keras.Sequential([self.model, tf.keras.layers.Softmax()])
         self.predictions = self.probability_model.predict(self.test_images)
 
@@ -153,9 +150,6 @@ def plot_value_array(ind, predictions_array, true_label):
 # Plot the first X test images, their predicted labels, and the true labels.
 # Color correct predictions in blue and incorrect predictions in red.
 if __name__ == '__main__':
-    model = 'base_line'  # load the existing model
-    model = None
-
     mnist_train_images = [cv.copyMakeBorder(x, 2, 2, 2, 2, cv.BORDER_REPLICATE) for x in mnist_train_images]
     mnist_shape = mnist_test_images.shape[1:3]
 
@@ -280,7 +274,9 @@ if __name__ == '__main__':
     #         'logcosh', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy',
     #         'kullback_leibler_divergence', 'poisson', 'cosine_proximity'}
 
-    tc = tfMnistTrainer(_dense=dense[4])
+    model = ['base_0%d', 'base_line']
+
+    tc = tfMnistTrainer(_model=model[1])
     # num_rows = 5
     # num_cols = 3
     # num_images = num_rows * num_cols
